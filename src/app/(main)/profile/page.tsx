@@ -53,7 +53,7 @@ export default function ProfilePage() {
       <div className="sticky top-0 z-40 bg-white border-b border-gray-200">
         <div className="flex items-center justify-between p-4">
           <h1 className="text-lg font-semibold">Meu Perfil</h1>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" onClick={() => router.push("/profile/settings")}>
             <Settings className="w-5 h-5" />
           </Button>
         </div>
