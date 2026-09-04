@@ -6,14 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { User as UserType } from "@/types";
 
 export default function ProfilePage() {
   const [user, setUser] = useState<UserType | null>(null);
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     fetchUser();
@@ -30,6 +30,7 @@ export default function ProfilePage() {
         name: authUser.user_metadata?.name || "Usuário",
         email: authUser.email || "",
         phone: authUser.user_metadata?.phone,
+        created_at: authUser.created_at,
       });
     }
   };

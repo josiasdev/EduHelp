@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,7 +24,7 @@ export default function CreateQuestionPage() {
   const [loading, setLoading] = useState(false);
   const [loadingDisciplines, setLoadingDisciplines] = useState(true);
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     fetchDisciplines();
@@ -99,7 +99,7 @@ export default function CreateQuestionPage() {
             <div>
               <Select
                 value={disciplineId}
-                onValueChange={setDisciplineId}
+                onValueChange={(value) => setDisciplineId(value ?? "")}
                 disabled={loadingDisciplines}
               >
                 <SelectTrigger className="h-12 rounded-full bg-gray-100 border-0">
@@ -124,7 +124,7 @@ export default function CreateQuestionPage() {
             <div>
               <Select
                 value={privacy}
-                onValueChange={(v) => setPrivacy(v as "public" | "private")}
+                onValueChange={(v) => setPrivacy((v as "public" | "private") ?? "public")}
               >
                 <SelectTrigger className="h-12 rounded-full bg-gray-100 border-0">
                   <SelectValue placeholder="Privacidade" />
