@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,7 +16,6 @@ export default function QuestionDetailPage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const params = useParams();
-  const supabase = useMemo(() => createClient(), []);
   const questionId = params.id as string;
 
   useEffect(() => {
@@ -24,57 +23,72 @@ export default function QuestionDetailPage() {
   }, [questionId]);
 
   const fetchQuestionAndAnswers = async () => {
-    const { data: questionData } = await supabase
-      .from("questions")
-      .select(`
-        *,
-        user:users(*),
-        discipline:disciplines(*)
-      `)
-      .eq("id", questionId)
-      .single();
+    try {
+      const supabase = createClient();
+      const { data: questionData } = await supabase
+        .from("questions")
+        .select(`
+          *,
+          user:users(*),
+          discipline:disciplines(*)
+        `)
+        .eq("id", questionId)
+        .single();
 
-    if (questionData) {
-      setQuestion(questionData);
+      if (questionData) {
+        setQuestion(questionData);
+      }
+
+      const { data: answersData } = await supabase
+        .from("answers")
+        .select(`
+          *,
+          user:users(*)
+        `)
+        .eq("question_id", questionId)
+        .order("is_best", { ascending: false })
+        .order("created_at", { ascending: false });
+
+      if (answersData) {
+        setAnswers(answersData);
+      }
+    } catch (err) {
+      console.error("Erro ao buscar pergunta:", err);
+    } finally {
+      setLoading(false);
     }
-
-    const { data: answersData } = await supabase
-      .from("answers")
-      .select(`
-        *,
-        user:users(*)
-      `)
-      .eq("question_id", questionId)
-      .order("is_best", { ascending: false })
-      .order("created_at", { ascending: false });
-
-    if (answersData) {
-      setAnswers(answersData);
-    }
-
-    setLoading(false);
   };
 
   const handleLike = async (answerId: string) => {
-    const answer = answers.find((a) => a.id === answerId);
-    if (!answer) return;
+    try {
+      const supabase = createClient();
+      const answer = answers.find((a) => a.id === answerId);
+      if (!answer) return;
 
-    await supabase
-      .from("answers")
-      .update({ likes_count: answer.likes_count + 1 })
-      .eq("id", answerId);
+      await supabase
+        .from("answers")
+        .update({ likes_count: answer.likes_count + 1 })
+        .eq("id", answerId);
 
-    fetchQuestionAndAnswers();
+      fetchQuestionAndAnswers();
+    } catch (err) {
+      console.error("Erro ao curtir:", err);
+    }
   };
 
   const handleMarkBest = async (answerId: string) => {
-    await supabase
-      .from("answers")
-      .update({ is_best: true })
-      .eq("id", answerId)
-      .eq("question_id", questionId);
+    try {
+      const supabase = createClient();
+      await supabase
+        .from("answers")
+        .update({ is_best: true })
+        .eq("id", answerId)
+        .eq("question_id", questionId);
 
-    fetchQuestionAndAnswers();
+      fetchQuestionAndAnswers();
+    } catch (err) {
+      console.error("Erro ao marcar melhor resposta:", err);
+    }
   };
 
   if (loading) {

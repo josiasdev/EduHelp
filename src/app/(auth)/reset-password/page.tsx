@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -19,17 +19,21 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false);
   const [validSession, setValidSession] = useState<boolean | null>(null);
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     const checkSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      setValidSession(!!session);
+      try {
+        const supabase = createClient();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        setValidSession(!!session);
+      } catch {
+        setValidSession(false);
+      }
     };
     checkSession();
-  }, [supabase]);
+  }, []);
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,22 +52,28 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    const { error: updateError } = await supabase.auth.updateUser({
-      password,
-    });
+    try {
+      const supabase = createClient();
+      const { error: updateError } = await supabase.auth.updateUser({
+        password,
+      });
 
-    if (updateError) {
-      setError(updateError.message);
+      if (updateError) {
+        setError(updateError.message);
+        setLoading(false);
+        return;
+      }
+
+      setSuccess(true);
       setLoading(false);
-      return;
+
+      setTimeout(() => {
+        router.push("/login");
+      }, 3000);
+    } catch (err) {
+      setError("Erro ao conectar com o servidor");
+      setLoading(false);
     }
-
-    setSuccess(true);
-    setLoading(false);
-
-    setTimeout(() => {
-      router.push("/login");
-    }, 3000);
   };
 
   if (validSession === null) {

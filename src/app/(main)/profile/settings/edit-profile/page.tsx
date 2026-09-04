@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,23 +18,28 @@ export default function EditProfilePage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     fetchUser();
   }, []);
 
   const fetchUser = async () => {
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
+    try {
+      const supabase = createClient();
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
 
-    if (authUser) {
-      setName(authUser.user_metadata?.name || "");
-      setEmail(authUser.email || "");
-      setPhone(authUser.user_metadata?.phone || "");
+      if (authUser) {
+        setName(authUser.user_metadata?.name || "");
+        setEmail(authUser.email || "");
+        setPhone(authUser.user_metadata?.phone || "");
+      }
+    } catch (err) {
+      console.error("Erro ao buscar usuário:", err);
+    } finally {
+      setLoadingUser(false);
     }
-    setLoadingUser(false);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -42,26 +47,32 @@ export default function EditProfilePage() {
     setLoading(true);
     setError("");
 
-    const { error: updateError } = await supabase.auth.updateUser({
-      data: {
-        name,
-        phone,
-      },
-    });
+    try {
+      const supabase = createClient();
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: {
+          name,
+          phone,
+        },
+      });
 
-    if (updateError) {
-      setError(updateError.message);
+      if (updateError) {
+        setError(updateError.message);
+        setLoading(false);
+        return;
+      }
+
+      setSuccess(true);
       setLoading(false);
-      return;
+
+      setTimeout(() => {
+        router.push("/profile");
+        router.refresh();
+      }, 1500);
+    } catch (err) {
+      setError("Erro ao conectar com o servidor");
+      setLoading(false);
     }
-
-    setSuccess(true);
-    setLoading(false);
-
-    setTimeout(() => {
-      router.push("/profile");
-      router.refresh();
-    }, 1500);
   };
 
   const userInitials = name

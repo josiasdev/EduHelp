@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -23,12 +23,16 @@ export default function SettingsPage() {
   const [anonQuestions, setAnonQuestions] = useState(false);
   const [anonAnswers, setAnonAnswers] = useState(false);
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.push("/login");
+      router.refresh();
+    } catch (err) {
+      console.error("Erro ao fazer logout:", err);
+    }
   };
 
   return (

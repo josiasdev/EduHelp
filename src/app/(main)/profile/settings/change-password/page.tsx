@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,6 @@ export default function ChangePasswordPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,22 +36,28 @@ export default function ChangePasswordPage() {
       return;
     }
 
-    const { error: updateError } = await supabase.auth.updateUser({
-      password,
-    });
+    try {
+      const supabase = createClient();
+      const { error: updateError } = await supabase.auth.updateUser({
+        password,
+      });
 
-    if (updateError) {
-      setError(updateError.message);
+      if (updateError) {
+        setError(updateError.message);
+        setLoading(false);
+        return;
+      }
+
+      setSuccess(true);
       setLoading(false);
-      return;
+
+      setTimeout(() => {
+        router.push("/profile/settings");
+      }, 2000);
+    } catch (err) {
+      setError("Erro ao conectar com o servidor");
+      setLoading(false);
     }
-
-    setSuccess(true);
-    setLoading(false);
-
-    setTimeout(() => {
-      router.push("/profile/settings");
-    }, 2000);
   };
 
   return (

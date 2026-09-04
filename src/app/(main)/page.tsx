@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,27 +14,32 @@ export default function HomePage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     fetchQuestions();
   }, []);
 
   const fetchQuestions = async () => {
-    const { data, error } = await supabase
-      .from("questions")
-      .select(`
-        *,
-        user:users(*),
-        discipline:disciplines(*)
-      `)
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("questions")
+        .select(`
+          *,
+          user:users(*),
+          discipline:disciplines(*)
+        `)
       .order("created_at", { ascending: false })
       .limit(20);
 
-    if (data) {
-      setQuestions(data);
+      if (data) {
+        setQuestions(data);
+      }
+    } catch (err) {
+      console.error("Erro ao buscar perguntas:", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

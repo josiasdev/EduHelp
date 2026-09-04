@@ -6,39 +6,48 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { User as UserType } from "@/types";
 
 export default function ProfilePage() {
   const [user, setUser] = useState<UserType | null>(null);
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     fetchUser();
   }, []);
 
   const fetchUser = async () => {
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
+    try {
+      const supabase = createClient();
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
 
-    if (authUser) {
-      setUser({
-        id: authUser.id,
-        name: authUser.user_metadata?.name || "Usuário",
-        email: authUser.email || "",
-        phone: authUser.user_metadata?.phone,
-        created_at: authUser.created_at,
-      });
+      if (authUser) {
+        setUser({
+          id: authUser.id,
+          name: authUser.user_metadata?.name || "Usuário",
+          email: authUser.email || "",
+          phone: authUser.user_metadata?.phone,
+          created_at: authUser.created_at,
+        });
+      }
+    } catch (err) {
+      console.error("Erro ao buscar usuário:", err);
     }
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.push("/login");
+      router.refresh();
+    } catch (err) {
+      console.error("Erro ao fazer logout:", err);
+    }
   };
 
   const userInitials = user?.name

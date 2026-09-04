@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,36 +16,31 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
-  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
-
-  useEffect(() => {
-    supabaseRef.current = createClient();
-  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    if (!supabaseRef.current) {
-      setError("Erro ao inicializar autenticação");
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+        return;
+      }
+
+      router.push("/");
+      router.refresh();
+    } catch (err) {
+      setError("Erro ao conectar com o servidor");
       setLoading(false);
-      return;
     }
-
-    const { error } = await supabaseRef.current.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-      return;
-    }
-
-    router.push("/");
-    router.refresh();
   };
 
   return (
@@ -53,14 +48,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-6">
         <div className="flex flex-col items-center gap-4 mb-8">
           <div className="w-24 h-24 bg-white/20 rounded-2xl flex items-center justify-center">
-            <svg
-              viewBox="0 0 64 64"
-              className="w-16 h-16 fill-white"
-              aria-hidden="true"
-            >
-              <path d="M32 8c-2 0-4 1-5 3l-8 20c-1 2 0 4 2 5l6 2v16c0 2 2 4 4 4h2c2 0 4-2 4-4V38l6-2c2-1 3-3 2-5L37 11c-1-2-3-3-5-3z" />
-              <circle cx="32" cy="20" r="6" />
-            </svg>
+            <img src="/icons/logo.png" alt="EduHelp" className="w-16 h-16 object-contain" />
           </div>
           <h1 className="text-3xl font-bold text-white">EduHelp</h1>
         </div>

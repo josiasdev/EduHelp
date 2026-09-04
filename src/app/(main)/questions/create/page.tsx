@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,22 +24,27 @@ export default function CreateQuestionPage() {
   const [loading, setLoading] = useState(false);
   const [loadingDisciplines, setLoadingDisciplines] = useState(true);
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     fetchDisciplines();
   }, []);
 
   const fetchDisciplines = async () => {
-    const { data } = await supabase
-      .from("disciplines")
-      .select("*")
-      .order("name");
+    try {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("disciplines")
+        .select("*")
+        .order("name");
 
-    if (data) {
-      setDisciplines(data);
+      if (data) {
+        setDisciplines(data);
+      }
+    } catch (err) {
+      console.error("Erro ao buscar disciplinas:", err);
+    } finally {
+      setLoadingDisciplines(false);
     }
-    setLoadingDisciplines(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,28 +53,33 @@ export default function CreateQuestionPage() {
 
     setLoading(true);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    if (!user) {
-      router.push("/login");
-      return;
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+
+      const { error } = await supabase.from("questions").insert({
+        user_id: user.id,
+        discipline_id: disciplineId,
+        content: content.trim(),
+        privacy,
+      });
+
+      if (!error) {
+        router.push("/");
+        router.refresh();
+      }
+    } catch (err) {
+      console.error("Erro ao criar pergunta:", err);
+    } finally {
+      setLoading(false);
     }
-
-    const { error } = await supabase.from("questions").insert({
-      user_id: user.id,
-      discipline_id: disciplineId,
-      content: content.trim(),
-      privacy,
-    });
-
-    if (!error) {
-      router.push("/");
-      router.refresh();
-    }
-
-    setLoading(false);
   };
 
   return (

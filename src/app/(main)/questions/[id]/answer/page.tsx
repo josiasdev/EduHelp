@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,7 +17,6 @@ export default function AnswerQuestionPage() {
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
   const params = useParams();
-  const supabase = useMemo(() => createClient(), []);
   const questionId = params.id as string;
 
   useEffect(() => {
@@ -25,19 +24,25 @@ export default function AnswerQuestionPage() {
   }, [questionId]);
 
   const fetchQuestion = async () => {
-    const { data } = await supabase
-      .from("questions")
-      .select(`
-        *,
-        discipline:disciplines(*)
-      `)
-      .eq("id", questionId)
-      .single();
+    try {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("questions")
+        .select(`
+          *,
+          discipline:disciplines(*)
+        `)
+        .eq("id", questionId)
+        .single();
 
-    if (data) {
-      setQuestion(data);
+      if (data) {
+        setQuestion(data);
+      }
+    } catch (err) {
+      console.error("Erro ao buscar pergunta:", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -46,44 +51,49 @@ export default function AnswerQuestionPage() {
 
     setSubmitting(true);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-
-    let pdfUrl = null;
-
-    if (pdfFile) {
-      const fileName = `${user.id}/${Date.now()}_${pdfFile.name}`;
-      const { data: uploadData } = await supabase.storage
-        .from("answers")
-        .upload(fileName, pdfFile);
-
-      if (uploadData) {
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("answers").getPublicUrl(uploadData.path);
-        pdfUrl = publicUrl;
+      if (!user) {
+        router.push("/login");
+        return;
       }
+
+      let pdfUrl = null;
+
+      if (pdfFile) {
+        const fileName = `${user.id}/${Date.now()}_${pdfFile.name}`;
+        const { data: uploadData } = await supabase.storage
+          .from("answers")
+          .upload(fileName, pdfFile);
+
+        if (uploadData) {
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("answers").getPublicUrl(uploadData.path);
+          pdfUrl = publicUrl;
+        }
+      }
+
+      const { error } = await supabase.from("answers").insert({
+        question_id: questionId,
+        user_id: user.id,
+        content: content.trim(),
+        pdf_url: pdfUrl,
+      });
+
+      if (!error) {
+        router.push(`/questions/${questionId}`);
+        router.refresh();
+      }
+    } catch (err) {
+      console.error("Erro ao enviar resposta:", err);
+    } finally {
+      setSubmitting(false);
     }
-
-    const { error } = await supabase.from("answers").insert({
-      question_id: questionId,
-      user_id: user.id,
-      content: content.trim(),
-      pdf_url: pdfUrl,
-    });
-
-    if (!error) {
-      router.push(`/questions/${questionId}`);
-      router.refresh();
-    }
-
-    setSubmitting(false);
   };
 
   if (loading) {

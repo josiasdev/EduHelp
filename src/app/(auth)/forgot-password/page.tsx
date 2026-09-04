@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,28 +13,33 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const supabase = useMemo(() => createClient(), []);
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-      email,
-      {
-        redirectTo: `${window.location.origin}/reset-password`,
+    try {
+      const supabase = createClient();
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+        email,
+        {
+          redirectTo: `${window.location.origin}/reset-password`,
+        }
+      );
+
+      if (resetError) {
+        setError(resetError.message);
+        setLoading(false);
+        return;
       }
-    );
 
-    if (resetError) {
-      setError(resetError.message);
+      setSuccess(true);
       setLoading(false);
-      return;
+    } catch (err) {
+      setError("Erro ao conectar com o servidor");
+      setLoading(false);
     }
-
-    setSuccess(true);
-    setLoading(false);
   };
 
   return (
