@@ -16,6 +16,10 @@ export const metadata: Metadata = {
   title: "EduHelp",
   description: "Plataforma de ajuda acadêmica entre estudantes",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icons/logo.png",
+    apple: "/icons/logo.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
