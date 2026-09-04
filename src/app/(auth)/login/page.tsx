@@ -30,7 +30,15 @@ export default function LoginPage() {
       });
 
       if (error) {
-        setError(error.message);
+        if (error.message.includes("Invalid login")) {
+          setError("Email ou senha incorretos");
+        } else if (error.message.includes("rate limit")) {
+          setError("Muitas tentativas. Aguarde alguns minutos e tente novamente.");
+        } else if (error.message.includes("Email not confirmed")) {
+          setError("Email não confirmado. Verifique sua caixa de entrada.");
+        } else {
+          setError(error.message);
+        }
         setLoading(false);
         return;
       }

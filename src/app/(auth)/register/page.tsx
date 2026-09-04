@@ -37,7 +37,13 @@ export default function RegisterPage() {
       });
 
       if (error) {
-        setError(error.message);
+        if (error.message.includes("already registered")) {
+          setError("Este email já está cadastrado. Faça login.");
+        } else if (error.message.includes("rate limit")) {
+          setError("Muitas tentativas. Aguarde alguns minutos e tente novamente.");
+        } else {
+          setError(error.message);
+        }
         setLoading(false);
         return;
       }
